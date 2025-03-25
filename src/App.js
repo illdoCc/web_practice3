@@ -1,19 +1,16 @@
-import React from "react";
+import React, {useState} from "react";
+import MySidebar from "./Sidebar";
+import NewProjectBtn from "./NewProjectBtn";
 
-function MyButton() {
+function App() {
+    const [projects, setProjects] = useState([]);
+
     return (
-      <button>
-        我是一个按钮
-      </button>
-    );
-  }
-  
-  export default function MyApp() {
-    return (
-      <div>
-        <h1>欢迎来到我的应用</h1>
-        <MyButton />
+      <div className="app">
+          <MySidebar/>
+          <NewProjectBtn/>
       </div>
     );
-  }
+}
   
+export default App;

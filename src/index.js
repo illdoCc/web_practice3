@@ -11,8 +11,8 @@ const root = createRoot(document.getElementById("root"));
 root.render(
   <StrictMode>
     <MyHeader />
-    <Sidebar />
-    {/* <App /> */}
-    <MainContentArea />
+    {/* <Sidebar /> */}
+    <App />
+    {/* <MainContentArea /> */}
   </StrictMode>
 );

@@ -1,15 +1,16 @@
 import React, {useState} from "react";
-import MySidebar from "./Sidebar";
-import NewProjectBtn from "./NewProjectBtn";
+import Sidebar from "./Sidebar";
+import MainContentArea from "./ContentArea";
 
 function App() {
     const [projects, setProjects] = useState([]);
+    const [isActive, setIsActive] = useState("Inbox");
 
     return (
-      <div className="app">
-          <MySidebar/>
-          <NewProjectBtn/>
-      </div>
+      <>
+        <Sidebar projects={projects} setProjects={setProjects} isActive={isActive} setIsActive={setIsActive}/>
+        <MainContentArea projects={projects} setProjects={setProjects} isActive={isActive} setIsActive={setIsActive}/>
+      </>
     );
 }
   

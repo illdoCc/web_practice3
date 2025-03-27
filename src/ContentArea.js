@@ -9,6 +9,7 @@ function ContentArea({projects = [], setProjects, isActive, setIsActive}){
     const [taskPriority, setTaskPriority] = useState("1");
     // const [isCheck, setIsCheck] = useState(false);
     const [tasks, setTasks] = useState({}); // 儲存 {projectName: [[task1_name, descrip, date, pri], [task2_name, descrip, date, pri]]}
+    const [bored, setBored] = useState(false);
     const dialogRef = useRef(null);
     const priorityIcon = {"1": "🔴 ", "2": "🟠 ", "3": "🟡 ", "4": "🟢 "};
 
@@ -31,7 +32,12 @@ function ContentArea({projects = [], setProjects, isActive, setIsActive}){
         }else{
             dialogRef.current.close();
         }
-    }, [isOpen]);
+
+        if(bored && taskName !== "" && taskPriority !== "1"){
+            handleSubmit();
+            setBored(false);
+        }
+    }, [isOpen, bored, taskName, taskPriority]);
 
     const handleSubmit = () => {
         // 在active的project中插入tasks
@@ -61,6 +67,14 @@ function ContentArea({projects = [], setProjects, isActive, setIsActive}){
         }))
     }
 
+    const boredApi = async () => {
+        const res = await fetch("https://bored.api.lewagon.com/api/activity");
+        const resJson = await res.json();
+        setBored(true);
+        setTaskName(resJson.activity);
+        setTaskPriority("4");
+    }
+
     return(
         <div id="contentArea" className="contentArea">
             {tasks[isActive]?.map(([name, description, date, priority, checked], index) => (
@@ -88,6 +102,9 @@ function ContentArea({projects = [], setProjects, isActive, setIsActive}){
             <button onClick={openModal} id="new_task" className="newTaskbtn">
             {/* <button id="new_task" className="newTaskbtn"> */}
                 New Task
+            </button>
+            <button onClick={boredApi} id="bored" className="bored">
+                Bored
             </button>
             <dialog ref={dialogRef} id="new_task_dialog">
                 Task Name<br />

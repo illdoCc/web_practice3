@@ -1,54 +1,56 @@
 import React, {useState, useRef} from "react";
+import { format } from "date-fns";
+import _ from "lodash";
 
-// 試試新寫法: 不用project page，直接將tasks寫在contentArea上，切換project的時候，contentArea也隨即刷新
 function ContentArea({projects = [], setProjects, isActive, setIsActive}){
     const [isOpen, setIsOpen] = useState(false);
     const [taskName, setTaskName] = useState("");
     const [taskDescription, setTaskDescription] = useState("");
     const [taskDate, setTaskDate] = useState("");
+    const [displayDate, setDisplayDate] = useState(""); // show week day
     const [taskPriority, setTaskPriority] = useState("1");
-    // const [isCheck, setIsCheck] = useState(false);
     const [tasks, setTasks] = useState({}); // 儲存 {projectName: [[task1_name, descrip, date, pri], [task2_name, descrip, date, pri]]}
     const [bored, setBored] = useState(false);
     const dialogRef = useRef(null);
     const priorityIcon = {"1": "🔴 ", "2": "🟠 ", "3": "🟡 ", "4": "🟢 "};
 
+    // open dialog
     const openModal = () => {
         setIsOpen(true);
     }
 
+    // close dialog
     const closeModal = () => {
         setTaskName("");
         setTaskDescription("");
         setTaskDate("");
         setTaskPriority("1");
-        // setIsCheck(false);
         setIsOpen(false);
     };
 
-    React.useEffect(() => {
-        if(isOpen){
-            dialogRef.current.showModal();
-        }else{
-            dialogRef.current.close();
+    const handleDateChange = (e) => {
+        let date = e.target.value;  // YYYY-MM-DD
+        let parsedDate = new Date(date);
+        
+        if (!isNaN(parsedDate)) {
+          let weekDay = format(parsedDate, "EEEE");
+          setTaskDate(date);
+          setDisplayDate(`${date} (${weekDay})`);
         }
+    }
 
-        if(bored && taskName !== "" && taskPriority !== "1"){
-            handleSubmit();
-            setBored(false);
-        }
-    }, [isOpen, bored, taskName, taskPriority]);
-
+    // dialog submit tasks
     const handleSubmit = () => {
         // 在active的project中插入tasks
         const projectName = isActive;
         setTasks(prevTasks => ({
             ...prevTasks,
-            [projectName] : [...(prevTasks[projectName] || []), [taskName, taskDescription, taskDate, taskPriority, false]] 
+            [projectName] : [...(prevTasks[projectName] || []), [taskName, taskDescription, displayDate, taskPriority, false]] 
         }));
         closeModal();
     }
 
+    // is checked
     const check = (projectName, taskName) => {
         setTasks(prevTasks => ({
             ...prevTasks,
@@ -75,6 +77,91 @@ function ContentArea({projects = [], setProjects, isActive, setIsActive}){
         setTaskPriority("4");
     }
 
+    // open dialog
+    React.useEffect(() => {
+        if(isOpen){
+            dialogRef.current.showModal();
+        }else{
+            dialogRef.current.close();
+        }
+    }, [isOpen]);
+
+    // add bored task
+    React.useEffect(() => {
+        if(bored && taskName !== "" && taskPriority !== "1"){
+            handleSubmit();
+            setBored(false);
+        }
+    }, [bored, taskName, taskPriority])
+
+    // save to local
+    React.useEffect(() => {
+        if(_.isEmpty(tasks)) return; // if tasks is empty(first render), return
+        // console.log("123");
+        const projectList = []
+
+        // iterate by projects, so that projectList's project order is same to user's project order
+        const newArr = ["Inbox", ...projects];
+        newArr.map(projectName => {
+            let project = {
+                id: projectName, // id equal to project name
+                taskElements: []
+            };
+
+            tasks[projectName]?.forEach(element => {
+                const name = element[0];
+                const description = element[1];
+                const date = element[2];
+                const priority = element[3];
+                const completed = element[4];
+                project.taskElements.push({name, description, date, priority, completed});
+            });
+            projectList.push(project);
+        });
+        // console.log(projectList);
+        localStorage.setItem("projectList", JSON.stringify(projectList));
+        // console.log(projectList);
+    }, [tasks, projects]);
+
+    const isFirstRender = React.useRef(true);
+    // load from local, 
+    React.useEffect(() => {
+        // return;
+        // only render once
+        if (isFirstRender.current) {
+            isFirstRender.current = false;
+            return;
+        }
+
+        const storedProjects = localStorage.getItem("projectList");
+        const projectList = JSON.parse(storedProjects);
+        if(projectList === null) return;
+
+        // console.log("asd;flkj");
+        console.log(projectList);
+
+        projectList.forEach(project => {
+            const projectName = project.id;
+            project.taskElements?.forEach(taskElement => {
+                // console.log(taskElement.name);
+                const tName = taskElement.name;
+                const tDescription = taskElement.description;
+                const tDate = taskElement.date;
+                const tPriority = taskElement.priority;
+                const tCompleted = taskElement.completed;                
+                setTasks(prevTasks => ({
+                    ...prevTasks,
+                    [projectName] : [...(prevTasks[projectName] || []), [tName, tDescription, tDate, tPriority, tCompleted]] 
+                }));            
+            });
+        })
+        // console.log(tasks);
+    }, [])
+
+    // React.useEffect(() => {
+    //     localStorage.clear();
+    // }, []);
+
     return(
         <div id="contentArea" className="contentArea">
             {tasks[isActive]?.map(([name, description, date, priority, checked], index) => (
@@ -93,7 +180,7 @@ function ContentArea({projects = [], setProjects, isActive, setIsActive}){
                             🗑️
                         </button>
                         <p className="description">
-                            {description + date}
+                            {description + ' ' + date}
                         </p>
                     </div>
                     
@@ -135,7 +222,7 @@ function ContentArea({projects = [], setProjects, isActive, setIsActive}){
                     className="new_task_input" 
                     name="date_box"
                     value={taskDate}
-                    onChange={(e) => setTaskDate(e.target.value)}
+                    onChange={handleDateChange}
                 />
                 Priority(1 is most important)<br />
                 <input 
